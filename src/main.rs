@@ -4,6 +4,8 @@ use glfw::{Action, Context, Key};
 
 fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+    glfw.window_hint(glfw::WindowHint::ContextVersion(4, 4));
+    glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
 
     let (mut window, events) = glfw.create_window(
         800,
