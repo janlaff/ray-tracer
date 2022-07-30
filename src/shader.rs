@@ -4,22 +4,40 @@ use std::ptr;
 use gl::types::*;
 use crate::util::create_whitespace_cstring;
 use crate::error::Error;
+use crate::ResourceLoader;
 
 pub struct Shader {
     id: GLuint
 }
 
 impl Shader {
-    fn from_source(source: &CStr, kind: GLenum) -> Result<Self, Error> {
+    pub fn from_resource(loader: &ResourceLoader, name: &str) -> Result<Self, Error> {
+        const POSSIBLE_KINDS: [(&str, GLenum); 3] = [
+            (".vert", gl::VERTEX_SHADER),
+            (".frag", gl::FRAGMENT_SHADER),
+            (".comp", gl::COMPUTE_SHADER),
+        ];
+
+        let kind = POSSIBLE_KINDS.iter()
+            .find(|&(ext, _)| name.ends_with(ext))
+            .map(|&(_, kind)| kind)
+            .ok_or_else(|| Error::UnknownShaderType(name.to_owned()))?;
+
+        let source = loader.load_cstring(name)?;
+        Shader::from_source(&source, kind)
+            .map_err(|message| Error::CompileError {name: name.to_owned(), message})
+    }
+
+    fn from_source(source: &CStr, kind: GLenum) -> Result<Self, String> {
         let id = shader_from_source(source, kind)?;
         Ok(Shader { id })
     }
 
-    pub fn from_vert_source(source: &CStr) -> Result<Self, Error> {
+    pub fn from_vert_source(source: &CStr) -> Result<Self, String> {
         Shader::from_source(source, gl::VERTEX_SHADER)
     }
 
-    pub fn from_frag_source(source: &CStr) -> Result<Self, Error> {
+    pub fn from_frag_source(source: &CStr) -> Result<Self, String> {
         Shader::from_source(source, gl::FRAGMENT_SHADER)
     }
 
@@ -36,7 +54,7 @@ impl Drop for Shader {
     }
 }
 
-fn shader_from_source(source: &CStr, kind: GLenum) -> Result<GLuint, Error> {
+fn shader_from_source(source: &CStr, kind: GLenum) -> Result<GLuint, String> {
     let shader_id = unsafe { gl::CreateShader(kind) };
 
     unsafe {
@@ -61,7 +79,7 @@ fn shader_from_source(source: &CStr, kind: GLenum) -> Result<GLuint, Error> {
             );
         }
 
-        Err(Error::CompileError(info_log.to_string_lossy().into_owned()))
+        Err(info_log.to_string_lossy().into_owned())
     } else {
         Ok(shader_id)
     }

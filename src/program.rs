@@ -1,6 +1,6 @@
 use std::ptr;
 use gl::types::*;
-use crate::Shader;
+use crate::{ResourceLoader, Shader};
 use crate::util::create_whitespace_cstring;
 use crate::error::Error;
 
@@ -9,7 +9,22 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn from_shaders(shaders: &[Shader]) -> Result<Self, Error> {
+    pub fn from_resource(loader: &ResourceLoader, name: &str) -> Result<Self, Error> {
+        const POSSIBLE_KINDS: [&str; 3] = [".vert", ".frag", ".comp"];
+
+        let shaders = POSSIBLE_KINDS.iter()
+            .map(|ext| Shader::from_resource(loader, &format!("{}{}", name, ext)))
+            .filter(|result| {
+                result.as_ref().inspect_err(|error| println!("{:?}", error));
+                result.is_ok()
+            })
+            .collect::<Result<Vec<Shader>, Error>>()?;
+
+        Program::from_shaders(&shaders[..])
+            .map_err(|message| Error::LinkError {name: name.to_owned(), message})
+    }
+
+    pub fn from_shaders(shaders: &[Shader]) -> Result<Self, String> {
         let id = program_from_shaders(shaders)?;
         Ok(Program { id })
     }
@@ -29,7 +44,7 @@ impl Drop for Program {
     }
 }
 
-fn program_from_shaders(shaders: &[Shader]) -> Result<GLuint, Error> {
+fn program_from_shaders(shaders: &[Shader]) -> Result<GLuint, String> {
     let program_id = unsafe { gl::CreateProgram() };
 
     for shader in shaders {
@@ -55,7 +70,7 @@ fn program_from_shaders(shaders: &[Shader]) -> Result<GLuint, Error> {
             );
         }
 
-        return Err(Error::LinkError(info_log.to_string_lossy().into_owned()))
+        return Err(info_log.to_string_lossy().into_owned())
     }
 
     for shader in shaders {

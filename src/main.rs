@@ -1,17 +1,22 @@
+#![feature(result_option_inspect)]
+
 mod util;
 mod error;
 mod shader;
 mod program;
+mod resource_loader;
 
 use gl::types::*;
 use std::ffi::{CStr, CString};
+use std::path::Path;
 use std::ptr;
 use glfw::{Action, Context, Key};
 use crate::program::Program;
 use crate::shader::Shader;
 use crate::error::Error;
+use crate::resource_loader::ResourceLoader;
 
-fn run() -> Result<(), Error> {
+fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(4, 4));
     glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
@@ -29,19 +34,17 @@ fn run() -> Result<(), Error> {
 
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
-    let vert_shader = Shader::from_vert_source(
-        &CString::new(include_str!("triangle.vert")).unwrap()
+    let loader = ResourceLoader::from_relative_path(Path::new("assets")).unwrap();
+    let program = Program::from_resource(&loader, "shaders/triangle").unwrap();
+    program.set_used();
+
+    /*let vert_shader = Shader::from_vert_source(
+        &CString::new(include_str!("../assets/shaders/triangle.vert")).unwrap()
     )?;
 
     let frag_shader = Shader::from_frag_source(
-        &CString::new(include_str!("triangle.frag")).unwrap()
-    )?;
-
-    let program = Program::from_shaders(
-        &[vert_shader, frag_shader]
-    )?;
-
-    program.set_used();
+        &CString::new(include_str!("../assets/shaders/triangle.frag")).unwrap()
+    )?;*/
 
     let vertices: Vec<GLfloat> = vec![
         -0.5, -0.5, 0.0,
@@ -99,20 +102,11 @@ fn run() -> Result<(), Error> {
                 glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                     window.set_should_close(true);
                 }
+                glfw::WindowEvent::FramebufferSize(width, height) => {
+                    unsafe { gl::Viewport(0, 0, width, height); }
+                }
                 _ => {}
             }
-        }
-    }
-
-    Ok(())
-}
-
-fn main() {
-    if let Err(error) = run() {
-        match error {
-            Error::CompileError(message) => println!("CompileError: {}", message),
-            Error::LinkError(message) => println!("LinkError: {}", message),
-            _ => println!("Missing error handler")
         }
     }
 }
