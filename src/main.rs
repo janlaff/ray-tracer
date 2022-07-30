@@ -1,4 +1,5 @@
 mod util;
+mod error;
 mod shader;
 mod program;
 
@@ -8,8 +9,9 @@ use std::ptr;
 use glfw::{Action, Context, Key};
 use crate::program::Program;
 use crate::shader::Shader;
+use crate::error::Error;
 
-fn main() {
+fn run() -> Result<(), Error> {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(4, 4));
     glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
@@ -29,15 +31,15 @@ fn main() {
 
     let vert_shader = Shader::from_vert_source(
         &CString::new(include_str!("triangle.vert")).unwrap()
-    ).unwrap();
+    )?;
 
     let frag_shader = Shader::from_frag_source(
         &CString::new(include_str!("triangle.frag")).unwrap()
-    ).unwrap();
+    )?;
 
     let program = Program::from_shaders(
         &[vert_shader, frag_shader]
-    ).unwrap();
+    )?;
 
     program.set_used();
 
@@ -99,6 +101,18 @@ fn main() {
                 }
                 _ => {}
             }
+        }
+    }
+
+    Ok(())
+}
+
+fn main() {
+    if let Err(error) = run() {
+        match error {
+            Error::CompileError(message) => println!("CompileError: {}", message),
+            Error::LinkError(message) => println!("LinkError: {}", message),
+            _ => println!("Missing error handler")
         }
     }
 }

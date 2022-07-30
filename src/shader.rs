@@ -3,22 +3,23 @@ use std::io::Read;
 use std::ptr;
 use gl::types::*;
 use crate::util::create_whitespace_cstring;
+use crate::error::Error;
 
 pub struct Shader {
     id: GLuint
 }
 
 impl Shader {
-    fn from_source(source: &CStr, kind: GLenum) -> Result<Self, String> {
+    fn from_source(source: &CStr, kind: GLenum) -> Result<Self, Error> {
         let id = shader_from_source(source, kind)?;
         Ok(Shader { id })
     }
 
-    pub fn from_vert_source(source: &CStr) -> Result<Self, String> {
+    pub fn from_vert_source(source: &CStr) -> Result<Self, Error> {
         Shader::from_source(source, gl::VERTEX_SHADER)
     }
 
-    pub fn from_frag_source(source: &CStr) -> Result<Self, String> {
+    pub fn from_frag_source(source: &CStr) -> Result<Self, Error> {
         Shader::from_source(source, gl::FRAGMENT_SHADER)
     }
 
@@ -35,7 +36,7 @@ impl Drop for Shader {
     }
 }
 
-fn shader_from_source(source: &CStr, kind: GLenum) -> Result<GLuint, String> {
+fn shader_from_source(source: &CStr, kind: GLenum) -> Result<GLuint, Error> {
     let shader_id = unsafe { gl::CreateShader(kind) };
 
     unsafe {
@@ -60,7 +61,7 @@ fn shader_from_source(source: &CStr, kind: GLenum) -> Result<GLuint, String> {
             );
         }
 
-        Err(info_log.to_string_lossy().into_owned())
+        Err(Error::CompileError(info_log.to_string_lossy().into_owned()))
     } else {
         Ok(shader_id)
     }

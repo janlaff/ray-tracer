@@ -2,13 +2,14 @@ use std::ptr;
 use gl::types::*;
 use crate::Shader;
 use crate::util::create_whitespace_cstring;
+use crate::error::Error;
 
 pub struct Program {
     id: GLuint
 }
 
 impl Program {
-    pub fn from_shaders(shaders: &[Shader]) -> Result<Self, String> {
+    pub fn from_shaders(shaders: &[Shader]) -> Result<Self, Error> {
         let id = program_from_shaders(shaders)?;
         Ok(Program { id })
     }
@@ -28,7 +29,7 @@ impl Drop for Program {
     }
 }
 
-fn program_from_shaders(shaders: &[Shader]) -> Result<GLuint, String> {
+fn program_from_shaders(shaders: &[Shader]) -> Result<GLuint, Error> {
     let program_id = unsafe { gl::CreateProgram() };
 
     for shader in shaders {
@@ -54,7 +55,7 @@ fn program_from_shaders(shaders: &[Shader]) -> Result<GLuint, String> {
             );
         }
 
-        return Err(info_log.to_string_lossy().into_owned())
+        return Err(Error::LinkError(info_log.to_string_lossy().into_owned()))
     }
 
     for shader in shaders {
