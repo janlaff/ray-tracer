@@ -1,7 +1,8 @@
-extern crate gl;
-extern crate glfw;
+mod shader;
 
+use std::ffi::CStr;
 use glfw::{Action, Context, Key};
+use crate::shader::Shader;
 
 fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
@@ -20,6 +21,11 @@ fn main() {
     window.set_framebuffer_size_polling(true);
 
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
+
+    match Shader::from_vertex_source(&CStr::from_bytes_with_nul(b"int main() {}\0").unwrap()) {
+        Err(msg) => panic!("{}", msg),
+        _ => {}
+    }
 
     while !window.should_close() {
         unsafe {
