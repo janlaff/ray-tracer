@@ -9,23 +9,15 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn from_resource(loader: &ResourceLoader, name: &str) -> Result<Self, Error> {
-        const POSSIBLE_KINDS: [&str; 3] = [".vert", ".frag", ".comp"];
+    pub fn from_shaders(loader: &ResourceLoader, name: &str, shader_names: &[&str]) -> Result<Self, Error> {
+        let mut shaders = Vec::new();
+        for shader_name in shader_names {
+            shaders.push(Shader::from_resource(loader, shader_name)?);
+        }
 
-        let shaders = POSSIBLE_KINDS.iter()
-            .map(|ext| Shader::from_resource(loader, &format!("{}{}", name, ext)))
-            .filter(|result| {
-                result.as_ref().inspect_err(|error| println!("{:?}", error));
-                result.is_ok()
-            })
-            .collect::<Result<Vec<Shader>, Error>>()?;
+        let id = program_from_shaders(&shaders)
+            .map_err(|message| Error::LinkError {name: name.to_owned(), message})?;
 
-        Program::from_shaders(&shaders[..])
-            .map_err(|message| Error::LinkError {name: name.to_owned(), message})
-    }
-
-    pub fn from_shaders(shaders: &[Shader]) -> Result<Self, String> {
-        let id = program_from_shaders(shaders)?;
         Ok(Program { id })
     }
 

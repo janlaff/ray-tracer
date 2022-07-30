@@ -10,10 +10,6 @@ pub struct ResourceLoader {
 }
 
 impl ResourceLoader {
-    pub fn from_absolute_path(abs_path: &Path) -> Self {
-        unimplemented!()
-    }
-
     pub fn from_relative_path(rel_path: &Path) -> Result<Self, Error> {
         let exe_file = env::current_exe()
             .map_err(|_| Error::FailedToGetExePath)?;

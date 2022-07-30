@@ -35,16 +35,11 @@ fn main() {
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
     let loader = ResourceLoader::from_relative_path(Path::new("assets")).unwrap();
-    let program = Program::from_resource(&loader, "shaders/triangle").unwrap();
+    let program = Program::from_shaders(&loader, "triangle", &[
+        "shaders/triangle.vert",
+        "shaders/triangle.frag"
+    ]).unwrap();
     program.set_used();
-
-    /*let vert_shader = Shader::from_vert_source(
-        &CString::new(include_str!("../assets/shaders/triangle.vert")).unwrap()
-    )?;
-
-    let frag_shader = Shader::from_frag_source(
-        &CString::new(include_str!("../assets/shaders/triangle.frag")).unwrap()
-    )?;*/
 
     let vertices: Vec<GLfloat> = vec![
         -0.5, -0.5, 0.0,
