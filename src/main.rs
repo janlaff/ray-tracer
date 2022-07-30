@@ -1,7 +1,10 @@
+mod util;
 mod shader;
+mod program;
 
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use glfw::{Action, Context, Key};
+use crate::program::Program;
 use crate::shader::Shader;
 
 fn main() {
@@ -22,10 +25,19 @@ fn main() {
 
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
-    match Shader::from_vertex_source(&CStr::from_bytes_with_nul(b"int main() {}\0").unwrap()) {
-        Err(msg) => panic!("{}", msg),
-        _ => {}
-    }
+    let vert_shader = Shader::from_vert_source(
+        &CString::new(include_str!("triangle.vert")).unwrap()
+    ).unwrap();
+
+    let frag_shader = Shader::from_frag_source(
+        &CString::new(include_str!("triangle.frag")).unwrap()
+    ).unwrap();
+
+    let program = Program::from_shaders(
+        &[vert_shader, frag_shader]
+    ).unwrap();
+
+    program.set_used();
 
     while !window.should_close() {
         unsafe {

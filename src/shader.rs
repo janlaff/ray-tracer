@@ -2,6 +2,7 @@ use std::ffi::{CStr, CString};
 use std::io::Read;
 use std::ptr;
 use gl::types::*;
+use crate::util::create_whitespace_cstring;
 
 pub struct Shader {
     id: GLuint
@@ -13,12 +14,16 @@ impl Shader {
         Ok(Shader { id })
     }
 
-    pub fn from_vertex_source(source: &CStr) -> Result<Self, String> {
+    pub fn from_vert_source(source: &CStr) -> Result<Self, String> {
         Shader::from_source(source, gl::VERTEX_SHADER)
     }
 
-    pub fn from_fragment_source(source: &CStr) -> Result<Self, String> {
+    pub fn from_frag_source(source: &CStr) -> Result<Self, String> {
         Shader::from_source(source, gl::FRAGMENT_SHADER)
+    }
+
+    pub fn id(&self) -> GLuint {
+        self.id
     }
 }
 
@@ -39,15 +44,11 @@ fn shader_from_source(source: &CStr, kind: GLenum) -> Result<GLuint, String> {
     }
 
     let mut success: GLint = 1;
-    unsafe {
-        gl::GetShaderiv(shader_id, gl::COMPILE_STATUS, &mut success);
-    }
+    unsafe { gl::GetShaderiv(shader_id, gl::COMPILE_STATUS, &mut success); }
 
     if success == 0 {
         let mut info_log_len: GLint = 0;
-        unsafe {
-            gl::GetShaderiv(shader_id, gl::INFO_LOG_LENGTH, &mut info_log_len);
-        }
+        unsafe { gl::GetShaderiv(shader_id, gl::INFO_LOG_LENGTH, &mut info_log_len); }
 
         let mut info_log = create_whitespace_cstring(info_log_len as usize);
         unsafe {
@@ -63,10 +64,4 @@ fn shader_from_source(source: &CStr, kind: GLenum) -> Result<GLuint, String> {
     } else {
         Ok(shader_id)
     }
-}
-
-fn create_whitespace_cstring(len: usize) -> CString {
-    let mut buf = Vec::with_capacity(len + 1);
-    buf.extend([b' '].iter().cycle().take(len));
-    unsafe { CString::from_vec_unchecked(buf) }
 }
