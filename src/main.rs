@@ -2,7 +2,9 @@ mod util;
 mod shader;
 mod program;
 
+use gl::types::*;
 use std::ffi::{CStr, CString};
+use std::ptr;
 use glfw::{Action, Context, Key};
 use crate::program::Program;
 use crate::shader::Shader;
@@ -39,10 +41,50 @@ fn main() {
 
     program.set_used();
 
+    let vertices: Vec<GLfloat> = vec![
+        -0.5, -0.5, 0.0,
+        0.5, -0.5, 0.0,
+        0.0, 0.5, 0.0
+    ];
+
+    let mut vbo: GLuint = 0;
+    unsafe { gl::GenBuffers(1, &mut vbo); }
+
+    unsafe {
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        gl::BufferData(
+            gl::ARRAY_BUFFER,
+            (vertices.len() * std::mem::size_of::<GLfloat>()) as GLsizeiptr,
+            vertices.as_ptr() as *const GLvoid,
+            gl::STATIC_DRAW
+        );
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+    }
+
+    let mut vao: GLuint = 0;
+    unsafe {
+        gl::GenVertexArrays(1, &mut vao);
+        gl::BindVertexArray(vao);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        gl::EnableVertexAttribArray(0);
+        gl::VertexAttribPointer(
+            0,
+            3,
+            gl::FLOAT,
+            gl::FALSE,
+            (3 * std::mem::size_of::<GLfloat>()) as GLint,
+            ptr::null()
+        );
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        gl::BindVertexArray(0);
+    }
+
     while !window.should_close() {
         unsafe {
-            gl::ClearColor(1.0, 0.5, 0.4, 0.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
+
+            gl::BindVertexArray(vao);
+            gl::DrawArrays(gl::TRIANGLES, 0, 3);
         }
 
         window.swap_buffers();
