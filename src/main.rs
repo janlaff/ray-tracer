@@ -34,11 +34,14 @@ fn main() {
 
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
-    let loader = ResourceLoader::from_relative_path(Path::new("assets")).unwrap();
-    let program = Program::from_shaders(&loader, "triangle", &[
+    let loader = ResourceLoader::from_relative_path(
+        Path::new("assets")
+    ).unwrap();
+
+    let program = Program::from_shaders( "triangle", &[
         "shaders/triangle.vert",
         "shaders/triangle.frag"
-    ]).unwrap();
+    ], &loader).unwrap();
     program.set_used();
 
     let vertices: Vec<GLfloat> = vec![

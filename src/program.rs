@@ -9,7 +9,7 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn from_shaders(loader: &ResourceLoader, name: &str, shader_names: &[&str]) -> Result<Self, Error> {
+    pub fn from_shaders(name: &str, shader_names: &[&str], loader: &ResourceLoader) -> Result<Self, Error> {
         let mut shaders = Vec::new();
         for shader_name in shader_names {
             shaders.push(Shader::from_resource(loader, shader_name)?);
